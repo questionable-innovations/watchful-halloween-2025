@@ -13,6 +13,7 @@
 
 import { sse } from "cloudflare-workers-sse";
 import type { SSEMessage } from "cloudflare-workers-sse";
+import type { Greeting } from '@watchful-halloween-2025/types';
 
 const generationLimit = 3;
 const acceptsHeader = "text/event-stream";

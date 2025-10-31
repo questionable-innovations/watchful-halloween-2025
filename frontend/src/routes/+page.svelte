@@ -1,6 +1,8 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
     import * as Chart from "$lib/components/ui/chart/index.js";
+    import type { Greeting } from '@watchful-halloween-2025/types';
+    import { Button } from '$lib/components/ui/button';
 
     type Side = "left" | "right";
     type Message = { id: string; side: Side; text: string; };
@@ -71,6 +73,8 @@
     function clearChat() {
         messages = [];
     }
+
+    const greeting: Greeting = { message: 'Hello from the frontend!' };
 </script>
 
 <div class="min-h-screen flex items-center justify-center p-4 bg-gray-100">
@@ -132,6 +136,13 @@
             </button>
         </form>
     </div>
+</div>
+
+<div class="flex h-screen w-full items-center justify-center">
+	<div class="flex flex-col items-center space-y-4">
+		<h1 class="text-4xl font-bold">{greeting.message}</h1>
+		<Button>Click me</Button>
+	</div>
 </div>
 
 <style>
