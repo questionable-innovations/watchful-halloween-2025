@@ -1,13 +1,20 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
+    import * as Chart from "$lib/components/ui/chart/index.js";
 
     type Side = "left" | "right";
     type Message = { id: string; side: Side; text: string; };
+    type MessageOption = { id: string; side: Side; text: string; parent: string; };
 
     let input = "";
     let messages: Message[] = [];
     let messagesEnd: HTMLDivElement | null = null;
 
+    const chartConfig = {
+        desktop: { label: "Desktop", color: "var(--chart-1)" },
+        mobile: { label: "Mobile", color: "var(--chart-2)" },
+    } satisfies Chart.ChartConfig;
+    
     function uuid(): string {
         // Use native crypto.randomUUID when available, fallback to simple RFC4122 v4 generator
         try {
