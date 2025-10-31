@@ -20,9 +20,9 @@
   // .sum((d) => d.value)
   // .sort(sortFunc('value', 'desc'));
 
-  let orientation: ComponentProps<typeof Tree>['orientation'] = $state('horizontal');
-  let curve = $state(curveBumpX);
-  let layout = $state('chart');
+  let orientation: ComponentProps<typeof Tree>['orientation'] = $state('vertical');
+  let curve = $state(curveBumpY);
+  let layout = $state('node');
   let selected = $state();
   let sweep: ConnectorSweep = $state('none'); // Sweep direction
   let type: ConnectorType = $state('d3'); // Connector type: 'straight', 'square', 'beveled', 'rounded', 'd3'
@@ -43,31 +43,11 @@
   );
 </script>
 
-<h1>Examples</h1>
-
-<div class="grid gap-1 mb-4">
-  <div class="grid grid-cols-2 gap-1">
-    <Field label="Orientation">
-      <ToggleGroup bind:value={orientation} variant="outline" size="sm" inset class="w-full">
-        <ToggleOption value="horizontal">Horizontal</ToggleOption>
-        <ToggleOption value="vertical">Vertical</ToggleOption>
-      </ToggleGroup>
-    </Field>
-
-    <Field label="Layout">
-      <ToggleGroup bind:value={layout} variant="outline" size="sm" inset class="w-full">
-        <ToggleOption value="chart">Chart</ToggleOption>
-        <ToggleOption value="node">Node</ToggleOption>
-      </ToggleGroup>
-    </Field>
-  </div>
-
-</div>
-
 <h2>Basic</h2>
 
-  <div class="h-[800px] p-4 border rounded-sm overflow-hidden relative">
+  <div class="max-h-[80vh] h-[min(80vh,800px)] p-4 border rounded-sm overflow-auto relative bg-white">
     <Chart
+      class="w-full h-full"
       padding={{ top: 24, left: nodeWidth / 2, right: nodeWidth / 2 }}
       transform={{
         mode: 'canvas',
@@ -82,7 +62,7 @@
           nodeSize={layout === 'node' ? nodeSize : undefined}
         >
           {#snippet children({ nodes, links })}
-            <Layer type={"svg"}>
+            <Layer type={"svg"} class="w-full h-full">
               {#each links as link (getNodeKey(link.source) + '_' + getNodeKey(link.target))}
                 <Link
                   data={link}
@@ -92,7 +72,8 @@
                   {sweep}
                   {radius}
                   motion="tween"
-                  class="stroke-surface-content opacity-20"
+                  class="opacity-70"
+                  style="stroke: #cbd5e1; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none;"
                 />
               {/each}
 
@@ -110,24 +91,14 @@
                       expandedNodeNames = [...expandedNodeNames, node.data.name];
                     }
                     selected = node;
-
-                    // transform.zoomTo({
-                    //   x: orientation === 'horizontal' ? selected.y : selected.x,
-                    //   y: orientation === 'horizontal' ? selected.x : selected.y,
-                    // });
                   }}
                   class={cls(node.data.children && 'cursor-pointer')}
                 >
                   <Rect
                     width={nodeWidth}
                     height={nodeHeight}
-                    class={cls(
-                      'fill-surface-100',
-                      node.data.children
-                        ? 'stroke-primary hover:stroke-2'
-                        : 'stroke-secondary [stroke-dasharray:1]'
-                    )}
                     rx={10}
+                    style={`fill: ${node.data.children ? '#eef2ff' : '#ffffff'}; stroke: ${node.data.children ? '#6366f1' : '#9ca3af'}; stroke-width: ${node.data.children ? 1.5 : 1};`}
                   />
                   <Text
                     value={node.data.name}
@@ -136,10 +107,8 @@
                     dy={-2}
                     textAnchor="middle"
                     verticalAnchor="middle"
-                    class={cls(
-                      'text-xs pointer-events-none',
-                      node.data.children ? 'fill-primary' : 'fill-secondary'
-                    )}
+                    class="pointer-events-none"
+                    style={`fill: ${node.data.children ? '#3730a3' : '#374151'}; font-size: 11px; font-weight: 600;`}
                   />
                 </Group>
               {/each}
