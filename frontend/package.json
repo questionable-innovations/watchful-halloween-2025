@@ -48,6 +48,9 @@
 		]
 	},
 	"dependencies": {
+		"@layerstack/tailwind": "^1.0.1",
+		"@types/d3-hierarchy": "^3.1.7",
+		"@types/d3-shape": "^3.1.7",
 		"d3-array": "^3.2.4",
 		"d3-hierarchy": "^3.1.2",
 		"d3-scale": "^4.0.2",
