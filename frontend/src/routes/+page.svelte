@@ -77,6 +77,17 @@
         predictions = [];
     }
 
+    // Combine original messages (as linear chain) with predictions for tree display
+    $: fullTree = [
+        ...messages.map((m, i) => ({
+            id: m.id,
+            side: m.side,
+            content: m.content,
+            parentId: i > 0 ? messages[i - 1].id : undefined
+        })),
+        ...predictions
+    ] as MessagePredictions;
+
     async function fetchPredictions() {
         if (messages.length === 0) return;
         
@@ -258,13 +269,6 @@
     </div>
 </div>
 
-<div class="flex h-screen w-full items-center justify-center">
-	<div class="flex flex-col items-center space-y-4">
-		<h1 class="text-4xl font-bold">{greeting.message}</h1>
-		<Button>Click me</Button>
-	</div>
-</div>
-
 <style>
     /* small helpers to keep template classes concise */
     .left { justify-content: flex-start; }
@@ -283,7 +287,7 @@
                 <button class="text-gray-600 hover:text-gray-800" onclick={() => (showTree = false)}>Close</button>
             </div>
             <div class="max-h-[80vh] h-[min(80vh,800px)] p-4 bg-white">
-                <MessageTree {predictions} orientation="vertical" />
+                <MessageTree predictions={fullTree} orientation="vertical" />
             </div>
         </div>
     </div>
