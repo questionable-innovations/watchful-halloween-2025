@@ -14,6 +14,7 @@
     let predictions: MessagePredictions = [];
     let messagesEnd: HTMLDivElement | null = null;
     let isLoadingPredictions = false;
+    let showMobileModal = false;
 
     const chartConfig = {
         desktop: { label: "Desktop", color: "var(--chart-1)" },
@@ -218,6 +219,10 @@
             console.error('Error fetching predictions:', error);
         } finally {
             isLoadingPredictions = false;
+            // Open modal on mobile after predictions are loaded
+            if (window.innerWidth < 1024) {
+                showMobileModal = true;
+            }
         }
     }
 
@@ -357,8 +362,8 @@
             </form>
         </div>
 
-        <!-- Message Tree Section - Right Side -->
-        <div class="flex-1 bg-white rounded-lg shadow-md overflow-hidden flex flex-col min-h-[500px] lg:min-h-0">
+        <!-- Message Tree Section - Right Side (Desktop Only) -->
+        <div class="hidden lg:flex flex-1 bg-white rounded-lg shadow-md overflow-hidden flex-col min-h-[500px] lg:min-h-0">
             <div class="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
                 <h2 class="text-lg font-semibold">
                     {#if predictions.length > 0}
@@ -368,7 +373,7 @@
                     {/if}
                 </h2>
             </div>
-            <div class="flex-1 p-4 bg-white overflow-auto">
+            <div class="flex-1 p-4 bg-white overflow-auto touch-pan-x touch-pan-y">
                 {#if predictions.length > 0}
                     <MessageTree predictions={treeDisplay} orientation="horizontal" onNodeClick={handleNodeClick} />
                 {:else}
@@ -380,6 +385,44 @@
         </div>
     </div>
 </div>
+
+<!-- Mobile Modal for Message Tree -->
+{#if showMobileModal}
+    <div class="fixed inset-0 bg-black/50 z-50 lg:hidden" onclick={() => showMobileModal = false}>
+        <div class="fixed inset-4 bg-white rounded-lg shadow-xl flex flex-col" onclick={(e) => e.stopPropagation()}>
+            <div class="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+                <h2 class="text-lg font-semibold">
+                    {#if predictions.length > 0}
+                        Message Tree ({predictions.length} predictions)
+                    {:else}
+                        Message Tree
+                    {/if}
+                </h2>
+                <button 
+                    class="text-white hover:bg-white/20 rounded-full p-2"
+                    onclick={() => showMobileModal = false}
+                    aria-label="Close modal"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-1 p-4 bg-white overflow-auto touch-pan-x touch-pan-y">
+                {#if predictions.length > 0}
+                    <MessageTree predictions={treeDisplay} orientation="horizontal" onNodeClick={(nodeId) => {
+                        handleNodeClick(nodeId);
+                        showMobileModal = false;
+                    }} />
+                {:else}
+                    <div class="flex items-center justify-center h-full text-gray-400">
+                        <p>No predictions to display</p>
+                    </div>
+                {/if}
+            </div>
+        </div>
+    </div>
+{/if}
 
 <style>
     /* small helpers to keep template classes concise */

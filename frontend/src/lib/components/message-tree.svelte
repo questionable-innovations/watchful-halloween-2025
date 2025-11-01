@@ -218,7 +218,7 @@
   const translateY = $derived(orientation === 'horizontal' ? chartHeight / 2 : 0);
 </script>
 
-<div class={cls('w-full h-full overflow-auto', className)} bind:clientWidth={chartWidth} bind:clientHeight={chartHeight}>
+<div class={cls('w-full h-full overflow-auto touch-pan-x touch-pan-y', className)} bind:clientWidth={chartWidth} bind:clientHeight={chartHeight}>
   <div class="w-full h-full">
   <Chart
     padding={{ top: 24, bottom: 24, left: 10, right: 24 }}
