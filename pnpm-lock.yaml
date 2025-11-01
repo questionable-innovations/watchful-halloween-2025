@@ -17,6 +17,9 @@ importers:
       '@types/d3-shape':
         specifier: ^3.1.7
         version: 3.1.7
+      '@watchful-halloween-2025/types':
+        specifier: workspace:*
+        version: link:../packages/types
       d3-array:
         specifier: ^3.2.4
         version: 3.2.4

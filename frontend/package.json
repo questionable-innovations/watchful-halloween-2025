@@ -48,6 +48,7 @@
 		]
 	},
 	"dependencies": {
+		"@watchful-halloween-2025/types": "workspace:*",
 		"@layerstack/tailwind": "^1.0.1",
 		"@types/d3-hierarchy": "^3.1.7",
 		"@types/d3-shape": "^3.1.7",

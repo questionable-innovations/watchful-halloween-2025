@@ -1,0 +1,189 @@
+<script lang="ts">
+  import type { ComponentProps } from 'svelte';
+  import { cubicOut } from 'svelte/easing';
+  import { hierarchy, type HierarchyNode } from 'd3-hierarchy';
+  import { curveBumpX, curveBumpY } from 'd3-shape';
+
+  import { Chart, Group, Link, Layer, Rect, Text, Tree } from 'layerchart';
+  import { cls } from '@layerstack/tailwind';
+
+  // Local replicas of connector types to avoid depending on internal layerchart utils path
+  type ConnectorSweep = 'none' | 'start' | 'end' | 'both';
+  type ConnectorType = 'straight' | 'square' | 'beveled' | 'rounded' | 'd3';
+  import type { MessagePredictions, TreeMessage } from '@watchful-halloween-2025/types';
+
+  // Public props (Svelte 5 runes)
+  let {
+    predictions = [] as MessagePredictions,
+    orientation = 'vertical' as ComponentProps<typeof Tree>['orientation'],
+    layout = 'node' as 'node' | 'cluster',
+    sweep = 'none' as ConnectorSweep,
+    type = 'd3' as ConnectorType,
+    radius = 60,
+    className = ''
+  } = $props<{
+    predictions?: MessagePredictions;
+    orientation?: ComponentProps<typeof Tree>['orientation'];
+    layout?: 'node' | 'cluster';
+    sweep?: ConnectorSweep;
+    type?: ConnectorType;
+    radius?: number;
+    className?: string;
+  }>();
+  const curve = $derived(orientation === 'vertical' ? curveBumpY : curveBumpX);
+
+  type TreeNode = {
+    id: string;
+    name: string; // message content
+    side: TreeMessage['side'] | undefined;
+    children?: TreeNode[];
+  };
+
+  function buildTree(messages: MessagePredictions): TreeNode {
+    const nodes = new Map<string, TreeNode>();
+    const childrenMap = new Map<string, TreeNode[]>();
+    const root: TreeNode = { id: 'root', name: 'root', side: undefined, children: [] };
+
+    // Materialize nodes
+    for (const m of messages) {
+      nodes.set(m.id, { id: m.id, name: m.content, side: m.side, children: [] });
+    }
+
+    // Assign parent-child relationships
+    for (const m of messages) {
+      const node = nodes.get(m.id)!;
+      const pid = m.parentId;
+      if (pid && nodes.has(pid)) {
+        const arr = childrenMap.get(pid) ?? [];
+        arr.push(node);
+        childrenMap.set(pid, arr);
+      } else {
+        // No parentId or missing parent: treat as top-level under synthetic root
+        root.children!.push(node);
+      }
+    }
+
+    for (const [pid, arr] of childrenMap) {
+      const p = nodes.get(pid);
+      if (p) p.children = arr;
+    }
+
+    return root;
+  }
+
+  // Expanded state: show only root by default
+  let expandedIds = $state<string[]>(['root']);
+
+  // Derived hierarchy data (collapsible)
+  const baseTree = $derived(buildTree(predictions));
+  const complexDataHierarchy = $derived(
+    hierarchy(baseTree, (d) => (expandedIds.includes(d.id) ? d.children : null))
+  );
+
+  function getNodeKey(node: HierarchyNode<TreeNode>) {
+    return node.data.id + ':' + node.depth;
+  }
+
+  function hasChildren(n: HierarchyNode<TreeNode>) {
+    return !!(n.data.children && n.data.children.length > 0);
+  }
+
+  const nodeWidth = 160;
+  const nodeHeight = 26;
+  const nodeSiblingGap = 16;
+  const nodeParentGap = 80;
+  const nodeSize = $derived(
+    orientation === 'horizontal'
+      ? ([nodeHeight + nodeSiblingGap, nodeWidth + nodeParentGap] as [number, number])
+      : ([nodeWidth + nodeSiblingGap, nodeHeight + nodeParentGap] as [number, number])
+  );
+
+  function toggle(id: string) {
+    expandedIds = expandedIds.includes(id)
+      ? expandedIds.filter((x) => x !== id)
+      : [...expandedIds, id];
+  }
+
+  function colorForSide(side?: 'left' | 'right') {
+    return side === 'left'
+      ? { fill: '#eef2ff', stroke: '#6366f1', text: '#3730a3' }
+      : side === 'right'
+      ? { fill: '#f0fdf4', stroke: '#16a34a', text: '#166534' }
+      : { fill: '#ffffff', stroke: '#9ca3af', text: '#374151' };
+  }
+</script>
+
+<div class={cls('w-full h-full', className)}>
+  <Chart
+    padding={{ top: 24, left: 80, right: 80 }}
+    transform={{
+      mode: 'canvas',
+      motion: { type: 'tween', duration: 800, easing: cubicOut }
+    }}
+  >
+    {#snippet children()}
+      <Tree hierarchy={complexDataHierarchy} {orientation} nodeSize={layout === 'node' ? nodeSize : undefined}>
+        {#snippet children({ nodes, links })}
+          <Layer type={"svg"} class="w-full h-full">
+            {#each links as link (getNodeKey(link.source) + '_' + getNodeKey(link.target))}
+              <Link
+                data={link}
+                {orientation}
+                {curve}
+                {type}
+                {sweep}
+                {radius}
+                motion="tween"
+                class="opacity-70"
+                style="stroke: #cbd5e1; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none;"
+              />
+            {/each}
+
+            {#each nodes as node (getNodeKey(node))}
+              {#key getNodeKey(node)}
+                <Group
+                  x={(orientation === 'horizontal' ? node.y : node.x) - nodeWidth / 2}
+                  y={(orientation === 'horizontal' ? node.x : node.y) - nodeHeight / 2}
+                  motion="tween"
+                  onclick={() => toggle(node.data.id)}
+                  class={cls(hasChildren(node) && 'cursor-pointer')}
+                >
+                  <Rect
+                    width={nodeWidth}
+                    height={nodeHeight}
+                    rx={10}
+                    style={`
+                      ${(() => {
+                        const c = colorForSide(node.data.side);
+                        return `fill: ${hasChildren(node) ? c.fill : '#ffffff'}; stroke: ${hasChildren(node) ? c.stroke : '#9ca3af'}; stroke-width: ${hasChildren(node) ? 1.5 : 1};`;
+                      })()}
+                    `}
+                  />
+                  <Text
+                    value={node.data.name}
+                    x={nodeWidth / 2}
+                    y={nodeHeight / 2}
+                    dy={-2}
+                    textAnchor="middle"
+                    verticalAnchor="middle"
+                    class="pointer-events-none"
+                    style={`
+                      ${(() => {
+                        const c = colorForSide(node.data.side);
+                        return `fill: ${hasChildren(node) ? c.text : '#374151'}; font-size: 11px; font-weight: 600;`;
+                      })()}
+                    `}
+                  />
+                </Group>
+              {/key}
+            {/each}
+          </Layer>
+        {/snippet}
+      </Tree>
+    {/snippet}
+  </Chart>
+</div>
+
+<style>
+  /* No component-scoped styles; colors are inline for clarity */
+</style>
