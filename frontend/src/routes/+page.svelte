@@ -4,6 +4,8 @@
     import { Button } from '$lib/components/ui/button';
     import { MessageTree } from '$lib';
     import type { MessagePredictions, LinearMessage, PredictionRequest, TreeMessage } from '@watchful-halloween-2025/types';
+	import { uuid } from "$lib/utils";
+    import { messageTemplates } from "$lib/templates";
 
     type Side = "left" | "right";
 
@@ -18,36 +20,10 @@
         mobile: { label: "Mobile", color: "var(--chart-2)" },
     } satisfies Chart.ChartConfig;
     
-    function uuid(): string {
-        // Use native crypto.randomUUID when available, fallback to simple RFC4122 v4 generator
-        try {
-            if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-                return (crypto as any).randomUUID();
-            }
-        } catch {}
-
-        // fallback
-        const bytes = new Uint8Array(16);
-        if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
-            (crypto as any).getRandomValues(bytes);
-        } else {
-            for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256);
-        }
-        // set version and clock_seq_hi_and_reserved bits
-        bytes[6] = (bytes[6] & 0x0f) | 0x40;
-        bytes[8] = (bytes[8] & 0x3f) | 0x80;
-        const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
-        return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
-    }
 
     onMount(() => {
-  
-        messages = [
-            { id: uuid(), side: "left", content: "Hi you can send messages from either side." },
-            { id: uuid(), side: "right", content: "Try typing below and use Send left / Send right." }
-        ];
+        loadTemplate(0);
         scrollToBottom();
-    
     });
 
     async function addMessage(side: Side) {
@@ -76,6 +52,20 @@
         predictions = [];
     }
 
+    function loadTemplate(templateIndex: number) {
+        const template = messageTemplates[templateIndex];
+        if (!template) return;
+        
+        messages = template.messages.map(msg => ({
+            id: uuid(),
+            side: msg.side as Side,
+            content: msg.content
+        }));
+        predictions = [];
+        
+        tick().then(() => scrollToBottom());
+    }
+
     // Combine original messages (as linear chain) with predictions for tree display
     $: fullTree = [
         ...messages.map((m, i) => ({
@@ -96,7 +86,7 @@
         const request: PredictionRequest = {
             history: messages,
             messageBreadth: 2,
-            maxDepth: 3
+            maxDepth: 4
         };
 
         console.log('Sending prediction request:', request);
@@ -226,12 +216,28 @@
         // Auto-generate new predictions
         await fetchPredictions();
     }
-
-    const greeting = { message: 'Hello from the frontend!' } as const;
 </script>
 
 <div class="min-h-screen flex flex-col p-4 bg-gray-100 gap-4">
+
+    <h1 class="text-4xl font-bold text-center">Human Interaction Simulator</h1>
+    
     <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
+        <!-- Template Selector Header -->
+        <div class="px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
+            <h2 class="text-sm font-medium text-white/90 mb-2">Start with a template:</h2>
+            <div class="flex flex-wrap gap-2">
+                {#each messageTemplates as template, index}
+                    <button
+                        class="px-3 py-1.5 text-sm bg-white/20 hover:bg-white/30 text-white rounded transition-colors"
+                        onclick={() => loadTemplate(index)}
+                    >
+                        {template.name}
+                    </button>
+                {/each}
+            </div>
+        </div>
+
         <header class="px-4 py-3 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
             <h1 class="text-lg font-semibold">Chat</h1>
             <div class="flex items-center gap-2">

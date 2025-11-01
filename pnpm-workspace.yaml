@@ -1,4 +1,10 @@
 packages:
-  - 'frontend'
-  - 'recursive-worker'
-  - 'packages/*'
+  - frontend
+  - recursive-worker
+  - packages/*
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - svelte-preprocess
+  - workerd
