@@ -39,5 +39,8 @@
 	 * Service Bindings (communicate between multiple Workers)
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
 	 */
-	"services": [{ "binding": "SELF", "service": "recursive-worker" }]
+	"services": [{ "binding": "SELF", "service": "recursive-worker" }],
+	"routes": [
+		{ "pattern": "api.chat.qinnovate.nz", "custom_domain": true }
+	]
 }
