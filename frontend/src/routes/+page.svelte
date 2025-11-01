@@ -264,9 +264,9 @@
 <div class="min-h-screen p-4 bg-gray-100">
     <h1 class="text-4xl font-bold text-center mb-4">Human Interaction Simulator</h1>
     
-    <div class="flex gap-4 h-[calc(100vh-8rem)]">
+    <div class="flex flex-col lg:flex-row gap-4 h-[calc(100vh-8rem)]">
         <!-- Chat Section - Left Side -->
-        <div class="w-[400px] flex-shrink-0 bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
+        <div class="w-full lg:w-[400px] flex-shrink-0 bg-white rounded-lg shadow-md flex flex-col overflow-hidden min-h-[500px] lg:min-h-0">
             <!-- Template Selector Header -->
             <div class="px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
                 <h2 class="text-sm font-medium text-white/90 mb-2">Start with a template:</h2>
@@ -358,7 +358,7 @@
         </div>
 
         <!-- Message Tree Section - Right Side -->
-        <div class="flex-1 bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
+        <div class="flex-1 bg-white rounded-lg shadow-md overflow-hidden flex flex-col min-h-[500px] lg:min-h-0">
             <div class="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
                 <h2 class="text-lg font-semibold">
                     {#if predictions.length > 0}
