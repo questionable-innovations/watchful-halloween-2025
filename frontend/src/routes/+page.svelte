@@ -290,15 +290,7 @@
             </main>
 
             <!-- input -->
-            <form class="px-4 py-3 border-t bg-white flex items-center gap-3" onsubmit={() => addMessage("right")}>
-                <button
-                    type="button"
-                    class="w-20 h-12 flex items-center justify-center bg-indigo-600 text-white px-2 py-2 rounded-md hover:bg-indigo-700 flex-shrink-0 text-sm"
-                    onclick={() => addMessage("left")}
-                >
-                    Send L
-                </button>
-
+            <form class="px-4 py-3 border-t bg-white flex flex-col gap-3" onsubmit={() => addMessage("right")}>
                 <textarea
                     class="flex-1 border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 h-12"
                     rows="2"
@@ -308,12 +300,22 @@
                     aria-label="Message input"
                 ></textarea>
 
-                <button
-                    type="submit"
-                    class="w-20 h-12 flex items-center justify-center bg-green-600 text-white px-2 py-2 rounded-md hover:bg-green-700 flex-shrink-0 text-sm"
-                >
-                    Send R
-                </button>
+                <div class="flex items-center gap-3">
+                    <button
+                        type="button"
+                        class="flex-1 h-12 flex items-center justify-center bg-indigo-600 text-white px-2 py-2 rounded-md hover:bg-indigo-700 text-sm"
+                        onclick={() => addMessage("left")}
+                    >
+                        Send L
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="flex-1 h-12 flex items-center justify-center bg-green-600 text-white px-2 py-2 rounded-md hover:bg-green-700 text-sm"
+                    >
+                        Send R
+                    </button>
+                </div>
             </form>
         </div>
 
