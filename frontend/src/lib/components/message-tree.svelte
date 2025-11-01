@@ -21,7 +21,8 @@
     sweep = 'none' as ConnectorSweep,
     type = 'd3' as ConnectorType,
     radius = 60,
-    className = ''
+    className = '',
+    onNodeClick = undefined
   } = $props<{
     predictions?: MessagePredictions;
     orientation?: ComponentProps<typeof Tree>['orientation'];
@@ -30,6 +31,7 @@
     type?: ConnectorType;
     radius?: number;
     className?: string;
+    onNodeClick?: (nodeId: string) => void;
   }>();
   const curve = $derived(orientation === 'vertical' ? curveBumpY : curveBumpX);
 
@@ -47,7 +49,7 @@
 
     // Materialize nodes
     for (const m of messages) {
-      nodes.set(m.id, { id: m.id, name: m.content || '', side: m.side, children: [] });
+      nodes.set(m.id, { id: m.id, name: m.content, side: m.side, children: [] });
     }
 
     // Assign parent-child relationships
@@ -125,7 +127,7 @@
   });
 
   function measureTextWidth(text: string): number {
-    if (!text || !measureCtx) return Math.max(40, Math.round((text?.length || 0) * 7));
+    if (!measureCtx) return Math.max(40, Math.round(text.length * 7));
     // normalize newlines to spaces for single-line rendering
     const t = text.replace(/\n/g, ' ');
     const w = measureCtx.measureText(t).width;
@@ -193,8 +195,8 @@
                   x={(orientation === 'horizontal' ? node.y : node.x) - nodeWidthFor(node.data.name) / 2}
                   y={(orientation === 'horizontal' ? node.x : node.y) - nodeHeight / 2}
                   motion="tween"
-                  onclick={() => toggle(node.data.id)}
-                  class={cls(hasChildren(node) && 'cursor-pointer')}
+                  onclick={() => onNodeClick ? onNodeClick(node.data.id) : toggle(node.data.id)}
+                  class="cursor-pointer"
                 >
                   <Rect
                     width={nodeWidthFor(node.data.name)}

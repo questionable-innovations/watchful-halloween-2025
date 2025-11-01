@@ -188,6 +188,42 @@
         }
     }
 
+    // Handle clicking on a tree node - trace path from root and add to chat
+    async function handleNodeClick(nodeId: string) {
+        // Find the clicked node in fullTree
+        const clickedNode = fullTree.find((n: TreeMessage) => n.id === nodeId);
+        if (!clickedNode) return;
+
+        // Build a path from root to this node by tracing parentIds
+        const path: TreeMessage[] = [];
+        let currentId: string | undefined = nodeId;
+        
+        while (currentId) {
+            const node = fullTree.find((n: TreeMessage) => n.id === currentId);
+            if (!node) break;
+            path.unshift(node); // Add to beginning to maintain order
+            currentId = node.parentId;
+        }
+
+        // Convert path to linear messages
+        const newMessages: LinearMessage[] = path.map(node => ({
+            id: node.id,
+            side: node.side,
+            content: node.content
+        }));
+
+        // Update messages and clear predictions
+        messages = newMessages;
+        predictions = [];
+        
+        // Scroll to bottom and wait for UI update
+        await tick();
+        scrollToBottom();
+        
+        // Auto-generate new predictions
+        await fetchPredictions();
+    }
+
     const greeting = { message: 'Hello from the frontend!' } as const;
 </script>
 
@@ -267,7 +303,7 @@
                 <h2 class="text-lg font-semibold">Message Tree ({predictions.length} predictions)</h2>
             </div>
             <div class="h-[600px] p-4 bg-white overflow-auto">
-                <MessageTree predictions={fullTree} orientation="vertical" />
+                <MessageTree predictions={fullTree} orientation="vertical" onNodeClick={handleNodeClick} />
             </div>
         </div>
     {/if}
