@@ -77,6 +77,17 @@
         ...predictions
     ] as MessagePredictions;
 
+    // For display in the tree, only show the last message (root) + predictions
+    $: treeDisplay = [
+        ...(messages.length > 0 ? [{
+            id: messages[messages.length - 1].id,
+            side: messages[messages.length - 1].side,
+            content: messages[messages.length - 1].content,
+            parentId: undefined // Make it the root for display
+        }] : []),
+        ...predictions
+    ] as MessagePredictions;
+
     async function fetchPredictions() {
         if (messages.length === 0) return;
         
@@ -312,7 +323,7 @@
                 <h2 class="text-lg font-semibold">Message Tree ({predictions.length} predictions)</h2>
             </div>
             <div class="h-[600px] p-4 bg-white overflow-auto">
-                <MessageTree predictions={fullTree} orientation="vertical" onNodeClick={handleNodeClick} />
+                <MessageTree predictions={treeDisplay} orientation="vertical" onNodeClick={handleNodeClick} />
             </div>
         </div>
     {/if}
