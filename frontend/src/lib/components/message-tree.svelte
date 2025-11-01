@@ -47,7 +47,7 @@
 
     // Materialize nodes
     for (const m of messages) {
-      nodes.set(m.id, { id: m.id, name: m.content, side: m.side, children: [] });
+      nodes.set(m.id, { id: m.id, name: m.content || '', side: m.side, children: [] });
     }
 
     // Assign parent-child relationships
@@ -125,7 +125,7 @@
   });
 
   function measureTextWidth(text: string): number {
-    if (!measureCtx) return Math.max(40, Math.round(text.length * 7));
+    if (!text || !measureCtx) return Math.max(40, Math.round((text?.length || 0) * 7));
     // normalize newlines to spaces for single-line rendering
     const t = text.replace(/\n/g, ' ');
     const w = measureCtx.measureText(t).width;

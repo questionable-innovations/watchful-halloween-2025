@@ -3,7 +3,7 @@
     import * as Chart from "$lib/components/ui/chart/index.js";
     import { Button } from '$lib/components/ui/button';
     import { MessageTree } from '$lib';
-    import type { MessagePredictions, LinearMessage } from '@watchful-halloween-2025/types';
+    import type { MessagePredictions, LinearMessage, PredictionRequest, TreeMessage } from '@watchful-halloween-2025/types';
 
     type Side = "left" | "right";
 
@@ -12,6 +12,7 @@
     let showTree = false;
     let predictions: MessagePredictions = [];
     let messagesEnd: HTMLDivElement | null = null;
+    let isLoadingPredictions = false;
 
     const chartConfig = {
         desktop: { label: "Desktop", color: "var(--chart-1)" },
@@ -59,14 +60,6 @@
         scrollToBottom();
     }
 
-    // Build tree predictions by linking each message to the previous one (simple linear chain)
-    $: predictions = messages.map((m, i) => ({
-        id: m.id,
-        side: m.side,
-        content: m.content,
-        parentId: i > 0 ? messages[i - 1].id : undefined
-    }));
-
     function handleKeydown(e: KeyboardEvent) {
         // Enter to send as right by default, Shift+Enter for newline
         if (e.key === "Enter" && !e.shiftKey) {
@@ -81,6 +74,108 @@
 
     function clearChat() {
         messages = [];
+        predictions = [];
+    }
+
+    async function fetchPredictions() {
+        if (messages.length === 0) return;
+        
+        isLoadingPredictions = true;
+        predictions = []; // Clear existing predictions
+        
+        const request: PredictionRequest = {
+            history: messages,
+            messageBreadth: 2,
+            maxDepth: 3
+        };
+
+        console.log('Sending prediction request:', request);
+
+        try {
+            const response = await fetch('/api/predictions', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'text/event-stream',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            });
+
+            console.log('Response status:', response.status, response.statusText);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                throw new Error('No response body');
+            }
+
+            let buffer = '';
+            const seenIds = new Set<string>();
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                
+                // Keep the last incomplete line in the buffer
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6).trim();
+                        if (data === '[DONE]') {
+                            console.log('Stream complete: [DONE]');
+                            break;
+                        }
+                        if (data) {
+                            try {
+                                const rawMessage = JSON.parse(data);
+                                console.log('Received message:', rawMessage);
+                                
+                                // Handle different response formats
+                                let message: TreeMessage;
+                                if ('message' in rawMessage && rawMessage.message) {
+                                    // Format: { message: { id, side, content, parentId }, depth, branchPath }
+                                    message = rawMessage.message;
+                                } else if ('history' in rawMessage) {
+                                    // Format: { history: [...] } - skip this, it's just echoing the request
+                                    console.log('Skipping history echo');
+                                    continue;
+                                } else {
+                                    // Format: { id, side, content, parentId }
+                                    message = rawMessage;
+                                }
+                                
+                                if (!message.id) {
+                                    console.warn('Message missing ID, skipping:', message);
+                                    continue;
+                                }
+                                
+                                if (!seenIds.has(message.id)) {
+                                    seenIds.add(message.id);
+                                    predictions = [...predictions, message];
+                                    console.log('Added to predictions. Total:', predictions.length);
+                                } else {
+                                    console.log('Duplicate ID, skipping:', message.id);
+                                }
+                            } catch (e) {
+                                console.error('Failed to parse message:', data, e);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching predictions:', error);
+        } finally {
+            isLoadingPredictions = false;
+        }
     }
 
     const greeting = { message: 'Hello from the frontend!' } as const;
@@ -90,9 +185,23 @@
     <div class="w-full max-w-2xl bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
         <header class="px-4 py-3 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
             <h1 class="text-lg font-semibold">Chat</h1>
-            <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={() => (showTree = true)}
-                onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (showTree = true)}>See Tree</button>
-            <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={clearChat}>Clear</button>
+            <div class="flex items-center gap-2">
+                <button 
+                    class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded disabled:opacity-50 disabled:cursor-not-allowed" 
+                    onclick={fetchPredictions}
+                    disabled={isLoadingPredictions || messages.length === 0}
+                    onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !isLoadingPredictions && messages.length > 0 && fetchPredictions()}>
+                    {isLoadingPredictions ? 'Loading...' : 'Generate Predictions'}
+                </button>
+                <button 
+                    class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded disabled:opacity-50 disabled:cursor-not-allowed" 
+                    onclick={() => (showTree = true)}
+                    disabled={predictions.length === 0}
+                    onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && predictions.length > 0 && (showTree = true)}>
+                    See Tree ({predictions.length})
+                </button>
+                <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={clearChat}>Clear</button>
+            </div>
         </header>
 
         <!-- messages -->
