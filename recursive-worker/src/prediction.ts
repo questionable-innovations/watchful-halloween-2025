@@ -13,39 +13,75 @@ export interface BranchPrediction {
 	branchPath: number[];
 }
 
-export function generatePredictions({
+export async function generatePredictions({
 	history,
 	depth,
 	messageBreadth,
-	branchPath
+	branchPath,
+	ai
 }: {
 	history: MessageHistory;
 	depth: number;
 	messageBreadth: number;
 	branchPath: number[];
-}): BranchPrediction[] {
-	const predictions: BranchPrediction[] = [];
+	ai: Ai;
+}): Promise<BranchPrediction[]> {
+	const predictionPromises: Promise<BranchPrediction>[] = [];
 	for (let index = 0; index < messageBreadth; index += 1) {
 		const nextPath = [...branchPath, index];
-		const message = createTreeMessage(history, depth, nextPath);
-		predictions.push({ message, branchPath: nextPath });
+		predictionPromises.push(
+			createTreeMessage(history, depth, nextPath, ai).then((message) => ({
+				message,
+				branchPath: nextPath
+			}))
+		);
 	}
-	return predictions;
+	return Promise.all(predictionPromises);
 }
 
-function createTreeMessage(history: MessageHistory, depth: number, branchPath: number[]): TreeMessage {
+async function createTreeMessage(history: MessageHistory, depth: number, branchPath: number[], ai: Ai): Promise<TreeMessage | null> {
 	const parent = history.length ? history[history.length - 1] : undefined;
 	const generation = depth + 1;
-	const side = parent?.side === "left" ? "right" : "left";
+
 	const angleIndex = branchPath[branchPath.length - 1] % predictionAngles.length;
 	const angle = predictionAngles[angleIndex];
-	const base = parent?.content ?? "conversation start";
 	const optionLabel = branchPath.map((step) => step + 1).join(".");
+
+	const systemPrompt = `Provide a creative continuation of the following conversation snippet. The response should reflect the style and tone of the conversation so far, while incorporating the specified angle to enhance the message. Keep the response concise and engaging. The angle is ${angle}.`;
+
+	const response = await ai.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+		messages: [
+			{ role: "system", content: systemPrompt },
+			...history.map((msg) => ({
+				role: "user",
+				content: `${msg.side}: ${msg.content}`
+			})),
+		]
+	});
+
+	console.log(response, typeof response);
+
+	// {
+	// 	response: "right: Actually, I was thinking we could grab a cup of coffee and discuss the project that's been on hold. How about we meet at the café down the street at 2 PM today and outline a plan to move it forward?",
+	// 	tool_calls: [],
+	// 	usage: { prompt_tokens: 132, completion_tokens: 49, total_tokens: 181 }
+	// }
+
+	let side: "left" | "right";
+	if (response.response.startsWith("left:")) {
+		side = "left";
+	} else if (response.response.startsWith("right:")) {
+		side = "right";
+	} else {
+		// No side, don't return
+		console.warn("AI response missing side prefix:", response.response);
+		return null
+	}
 
 	return {
 		id: crypto.randomUUID(),
 		side,
-		content: `Depth ${generation} option ${optionLabel} ${angle} from "${base}"`,
+		content: response.response.slice(side.length + 2).trim(),
 		parentId: parent?.id
 	};
 }

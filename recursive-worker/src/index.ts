@@ -8,6 +8,9 @@ import type { PredictionRequest } from "../../packages/types/src";
 import { generatePredictions } from "./prediction";
 import { buildChildRequest, streamChildWorker } from "./child";
 
+const absoluteMaxDepth = 3;
+const absoluteMaxBreadth = 2;
+
 export default {
 	fetch: sse(handler)
 } satisfies ExportedHandler<Env>;
@@ -19,8 +22,8 @@ async function* handler(request: Request, env: Env, _ctx: ExecutionContext): Asy
 
 	const payload = (await request.json()) as PredictionRequest;
 	const history = payload.history;
-	const messageBreadth = payload.messageBreadth;
-	const maxDepth = payload.maxDepth;
+	const messageBreadth = Math.min(payload.messageBreadth, absoluteMaxBreadth);
+	const maxDepth = Math.min(payload.maxDepth, absoluteMaxDepth);
 	const depth = payload.depth ?? 0;
 	const branchPath = payload.branchPath ?? [];
 
@@ -35,7 +38,8 @@ async function* handler(request: Request, env: Env, _ctx: ExecutionContext): Asy
 		return;
 	}
 
-	const predictions = generatePredictions({ history, depth, messageBreadth, branchPath });
+
+	const predictions = await generatePredictions({ history, depth, messageBreadth, branchPath, ai: env.AI });
 
 	for (const { message, branchPath: nextPath } of predictions) {
 		yield {
