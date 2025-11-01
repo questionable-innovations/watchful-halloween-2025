@@ -1,11 +1,11 @@
 import type { MessageHistory, TreeMessage } from "../../packages/types/src";
 
 const predictionAngles = [
-	"highlights a concrete next step",
-	"amplifies the emotional payoff",
-	"frames the idea as a bold statement",
-	"turns the concept into a question to provoke thought",
-	"adds a vivid sensory detail to make it memorable"
+	"romance",
+	"business opportunity",
+	"pyrotechnics",
+	"hangout",
+	"bricks"
 ];
 
 export interface BranchPrediction {
@@ -26,17 +26,17 @@ export async function generatePredictions({
 	branchPath: number[];
 	ai: Ai;
 }): Promise<BranchPrediction[]> {
-	const predictionPromises: Promise<BranchPrediction>[] = [];
+	const predictionPromises: Promise<BranchPrediction | null>[] = [];
 	for (let index = 0; index < messageBreadth; index += 1) {
 		const nextPath = [...branchPath, index];
 		predictionPromises.push(
-			createTreeMessage(history, depth, nextPath, ai).then((message) => ({
+			createTreeMessage(history, depth, nextPath, ai).then((message) => ( message ? {
 				message,
 				branchPath: nextPath
-			}))
+			} : null))
 		);
 	}
-	return Promise.all(predictionPromises);
+	return Promise.all(predictionPromises).then((results) => results.filter((res): res is BranchPrediction => res !== null));
 }
 
 async function createTreeMessage(history: MessageHistory, depth: number, branchPath: number[], ai: Ai): Promise<TreeMessage | null> {
@@ -47,9 +47,10 @@ async function createTreeMessage(history: MessageHistory, depth: number, branchP
 	const angle = predictionAngles[angleIndex];
 	const optionLabel = branchPath.map((step) => step + 1).join(".");
 
-	const systemPrompt = `Provide a creative continuation of the following conversation snippet. The response should reflect the style and tone of the conversation so far, while incorporating the specified angle to enhance the message. Keep the response concise and engaging. The angle is ${angle}.`;
+	const systemPrompt = `These are direct messages, stay below a paragraph. Use the format \'side: message\'.`;
 
 	const response = await ai.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+		temperature: 0.99,
 		messages: [
 			{ role: "system", content: systemPrompt },
 			...history.map((msg) => ({

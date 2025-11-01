@@ -5,7 +5,7 @@ export const POST: RequestHandler = async ({ request }) => {
     try {
         const body: PredictionRequest = await request.json();
 
-        const response = await fetch('https://api.chat.qinnovate.nz/', {
+        const response = await fetch('http://localhost:8787', {
             method: 'POST',
             headers: {
                 'Accept': 'text/event-stream',
