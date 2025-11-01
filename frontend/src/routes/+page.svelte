@@ -33,11 +33,18 @@
         input = "";
         await tick();
         scrollToBottom();
+        // Automatically fetch predictions after adding a message
+        await fetchPredictions();
     }
 
     function handleKeydown(e: KeyboardEvent) {
+        // Ctrl+Enter to send as left
+        if (e.key === "Enter" && e.ctrlKey) {
+            e.preventDefault();
+            addMessage("left");
+        }
         // Enter to send as right by default, Shift+Enter for newline
-        if (e.key === "Enter" && !e.shiftKey) {
+        else if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             addMessage("right");
         }
