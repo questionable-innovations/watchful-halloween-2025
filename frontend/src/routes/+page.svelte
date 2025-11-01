@@ -197,12 +197,15 @@
         // Build a path from root to this node by tracing parentIds
         const path: TreeMessage[] = [];
         let currentId: string | undefined = nodeId;
+        const maxIterations = 100; // Safety limit to prevent infinite loops
+        let iterations = 0;
         
-        while (currentId) {
+        while (currentId && iterations < maxIterations) {
             const node = fullTree.find((n: TreeMessage) => n.id === currentId);
             if (!node) break;
             path.unshift(node); // Add to beginning to maintain order
             currentId = node.parentId;
+            iterations++;
         }
 
         // Convert path to linear messages
