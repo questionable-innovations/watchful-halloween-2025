@@ -157,9 +157,10 @@
   }
 </script>
 
-<div class={cls('w-full h-full', className)}>
+<div class={cls('w-full h-full overflow-auto', className)}>
+  <div class="w-full h-full" style="padding-left: 50%;">
   <Chart
-    padding={{ top: 24, left: 80, right: 80 }}
+    padding={{ top: 24, bottom: 24, left: 24, right: 24 }}
     transform={{
       mode: 'canvas',
       motion: { type: 'tween', duration: 800, easing: cubicOut }
@@ -231,6 +232,7 @@
       </Tree>
     {/snippet}
   </Chart>
+  </div>
 </div>
 
 <style>

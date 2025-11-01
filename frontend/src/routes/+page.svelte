@@ -3,14 +3,12 @@
     import * as Chart from "$lib/components/ui/chart/index.js";
     import { Button } from '$lib/components/ui/button';
     import { MessageTree } from '$lib';
-    import type { MessagePredictions } from '@watchful-halloween-2025/types';
+    import type { MessagePredictions, LinearMessage } from '@watchful-halloween-2025/types';
 
     type Side = "left" | "right";
-    type Message = { id: string; side: Side; text: string; };
-    type MessageOption = { id: string; side: Side; text: string; parent: string; };
 
     let input = "";
-    let messages: Message[] = [];
+    let messages: LinearMessage[] = [];
     let showTree = false;
     let predictions: MessagePredictions = [];
     let messagesEnd: HTMLDivElement | null = null;
@@ -45,8 +43,8 @@
     onMount(() => {
   
         messages = [
-            { id: uuid(), side: "left", text: "Hi you can send messages from either side." },
-            { id: uuid(), side: "right", text: "Try typing below and use Send left / Send right." }
+            { id: uuid(), side: "left", content: "Hi you can send messages from either side." },
+            { id: uuid(), side: "right", content: "Try typing below and use Send left / Send right." }
         ];
         scrollToBottom();
     
@@ -55,7 +53,7 @@
     async function addMessage(side: Side) {
         const text = input.trim();
         if (!text) return;
-        messages = [...messages, { id: uuid(), side, text }];
+        messages = [...messages, { id: uuid(), side, content: text }];
         input = "";
         await tick();
         scrollToBottom();
@@ -65,7 +63,7 @@
     $: predictions = messages.map((m, i) => ({
         id: m.id,
         side: m.side,
-        content: m.text,
+        content: m.content,
         parentId: i > 0 ? messages[i - 1].id : undefined
     }));
 
@@ -110,7 +108,7 @@
                                  class:bg-left={m.side === 'left'}
                                  class:bg-right={m.side === 'right'}
                                  style="background: {m.side === 'left' ? '#eef2ff' : '#dcfce7'}; color: #111827;">
-                                <div class="whitespace-pre-wrap">{m.text}</div>
+                                <div class="whitespace-pre-wrap">{m.content}</div>
                             </div>
                             {#if m.side === "right"}
                                 <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-sm font-medium">R</div>
