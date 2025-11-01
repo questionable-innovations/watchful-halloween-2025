@@ -193,8 +193,11 @@
     return height;
   }
 
-  // Highlight the most recent message node (last in list)
   const lastId = $derived(predictions.at(-1)?.id);
+
+  // Track chart dimensions for centering
+  let chartWidth = $state(800);
+  let chartHeight = $state(600);
 
   function toggle(id: string) {
     expandedIds = expandedIds.includes(id)
@@ -209,12 +212,16 @@
       ? { fill: '#f0fdf4', stroke: '#16a34a', text: '#166534' }
       : { fill: '#ffffff', stroke: '#9ca3af', text: '#374151' };
   }
+  
+  // Calculate the transform to position root in middle-left
+  const translateX = $derived(orientation === 'horizontal' ? 0 : chartWidth / 2);
+  const translateY = $derived(orientation === 'horizontal' ? chartHeight / 2 : 0);
 </script>
 
-<div class={cls('w-full h-full overflow-auto', className)}>
-  <div class="w-full h-full" style="padding-left: 50%;">
+<div class={cls('w-full h-full overflow-auto', className)} bind:clientWidth={chartWidth} bind:clientHeight={chartHeight}>
+  <div class="w-full h-full">
   <Chart
-    padding={{ top: 24, bottom: 24, left: 24, right: 24 }}
+    padding={{ top: 24, bottom: 24, left: 10, right: 24 }}
     transform={{
       mode: 'canvas',
       motion: { type: 'tween', duration: 800, easing: cubicOut }
@@ -224,6 +231,7 @@
       <Tree hierarchy={complexDataHierarchy} {orientation} nodeSize={layout === 'node' ? nodeSize : undefined}>
         {#snippet children({ nodes, links })}
           <Layer type={"svg"} class="w-full h-full">
+            <g transform={`translate(${translateX}, ${translateY})`}>
             {#each links as link (getNodeKey(link.source) + '_' + getNodeKey(link.target))}
               {#if link.target.depth > 0}
               <Link
@@ -286,6 +294,7 @@
                 {/if}
               {/key}
             {/each}
+            </g>
           </Layer>
         {/snippet}
       </Tree>
