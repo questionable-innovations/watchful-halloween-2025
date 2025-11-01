@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onMount, tick } from "svelte";
     import * as Chart from "$lib/components/ui/chart/index.js";
-    import type { Greeting } from '@watchful-halloween-2025/types';
     import { Button } from '$lib/components/ui/button';
+    import { MessageTree } from '$lib';
+    import type { MessagePredictions } from '@watchful-halloween-2025/types';
 
     type Side = "left" | "right";
     type Message = { id: string; side: Side; text: string; };
@@ -10,6 +11,8 @@
 
     let input = "";
     let messages: Message[] = [];
+    let showTree = false;
+    let predictions: MessagePredictions = [];
     let messagesEnd: HTMLDivElement | null = null;
 
     const chartConfig = {
@@ -58,6 +61,14 @@
         scrollToBottom();
     }
 
+    // Build tree predictions by linking each message to the previous one (simple linear chain)
+    $: predictions = messages.map((m, i) => ({
+        id: m.id,
+        side: m.side,
+        content: m.text,
+        parentId: i > 0 ? messages[i - 1].id : undefined
+    }));
+
     function handleKeydown(e: KeyboardEvent) {
         // Enter to send as right by default, Shift+Enter for newline
         if (e.key === "Enter" && !e.shiftKey) {
@@ -74,7 +85,7 @@
         messages = [];
     }
 
-    const greeting: Greeting = { message: 'Hello from the frontend!' };
+    const greeting = { message: 'Hello from the frontend!' } as const;
 </script>
 
 <div class="min-h-screen flex items-center justify-center p-4 bg-gray-100">
@@ -135,6 +146,17 @@
                 Send right
             </button>
         </form>
+
+        <!-- see tree action -->
+        <div class="px-4 pb-4 bg-white border-t flex justify-end">
+            <button
+                type="button"
+                class="text-indigo-600 hover:text-indigo-800 text-sm underline"
+                on:click={() => (showTree = true)}
+            >
+                See tree
+            </button>
+        </div>
     </div>
 </div>
 
@@ -150,3 +172,20 @@
     .left { justify-content: flex-start; }
     .right { justify-content: flex-end; }
 </style>
+
+{#if showTree}
+    <!-- Modal overlay -->
+    <div class="fixed inset-0 z-40 bg-black/50" on:click={() => (showTree = false)}></div>
+    <!-- Modal content -->
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="w-full max-w-5xl bg-white rounded-lg shadow-lg overflow-hidden" on:click|stopPropagation>
+            <div class="flex items-center justify-between px-4 py-3 border-b">
+                <h2 class="text-lg font-semibold">Message Tree</h2>
+                <button class="text-gray-600 hover:text-gray-800" on:click={() => (showTree = false)}>Close</button>
+            </div>
+            <div class="max-h-[80vh] h-[min(80vh,800px)] p-4 bg-white">
+                <MessageTree {predictions} orientation="vertical" />
+            </div>
+        </div>
+    </div>
+{/if}
