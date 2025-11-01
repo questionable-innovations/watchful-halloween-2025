@@ -170,7 +170,7 @@
     <!-- Modal content -->
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <!-- svelte-ignore a11y_interactive_supports_focus -->
-        <div class="w-full max-w-5xl bg-white rounded-lg shadow-lg overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="message-tree-title" onclick={stopPropagation} onkeydown={stopPropagation}>
+        <div class="w-full max-w-5xl bg-white rounded-lg shadow-lg overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="message-tree-title" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
             <div class="flex items-center justify-between px-4 py-3 border-b">
                 <h2 class="text-lg font-semibold" id="message-tree-title">Message Tree</h2>
                 <button class="text-gray-600 hover:text-gray-800" onclick={() => (showTree = false)}>Close</button>

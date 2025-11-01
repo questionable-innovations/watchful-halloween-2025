@@ -72,11 +72,26 @@
     return root;
   }
 
-  // Expanded state: show only root by default
-  let expandedIds = $state<string[]>(['root']);
+  // Expanded state: expand all nodes by default
+  const baseTree = $derived(buildTree(predictions));
+  
+  // Collect all node IDs to expand everything
+  const allNodeIds = $derived(() => {
+    const ids = ['root'];
+    for (const m of predictions) {
+      ids.push(m.id);
+    }
+    return ids;
+  });
+  
+  let expandedIds = $state<string[]>([]);
+  
+  // Initialize with all IDs expanded
+  $effect(() => {
+    expandedIds = allNodeIds();
+  });
 
   // Derived hierarchy data (collapsible)
-  const baseTree = $derived(buildTree(predictions));
   const complexDataHierarchy = $derived(
     hierarchy(baseTree, (d) => (expandedIds.includes(d.id) ? d.children : null))
   );
@@ -154,7 +169,8 @@
       <Tree hierarchy={complexDataHierarchy} {orientation} nodeSize={layout === 'node' ? nodeSize : undefined}>
         {#snippet children({ nodes, links })}
           <Layer type={"svg"} class="w-full h-full">
-            {#each links.filter(l => l.source.depth > 0 && l.target.depth > 0) as link (getNodeKey(link.source) + '_' + getNodeKey(link.target))}
+            {#each links as link (getNodeKey(link.source) + '_' + getNodeKey(link.target))}
+              {#if link.target.depth > 0}
               <Link
                 data={link}
                 {orientation}
@@ -166,6 +182,7 @@
                 class="opacity-70"
                 style="stroke: #cbd5e1; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; fill: none;"
               />
+              {/if}
             {/each}
 
             {#each nodes as node (getNodeKey(node))}
