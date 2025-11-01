@@ -59,6 +59,31 @@
         predictions = [];
     }
 
+    function exportChatAsCSV() {
+        if (messages.length === 0) return;
+        
+        // Create CSV header
+        let csv = 'Side,Content\n';
+        
+        // Add each message as a row
+        for (const msg of messages) {
+            // Escape content: wrap in quotes and escape internal quotes
+            const escapedContent = `"${msg.content.replace(/"/g, '""')}"`;
+            csv += `${msg.side},${escapedContent}\n`;
+        }
+        
+        // Create blob and download
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `chat_${new Date().toISOString().slice(0, 10)}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
     function loadTemplate(templateIndex: number) {
         const template = messageTemplates[templateIndex];
         if (!template) return;
@@ -266,6 +291,12 @@
                         disabled={isLoadingPredictions || messages.length === 0}
                         onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !isLoadingPredictions && messages.length > 0 && fetchPredictions()}>
                         {isLoadingPredictions ? 'Loading...' : 'Predict'}
+                    </button>
+                    <button 
+                        class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed" 
+                        onclick={exportChatAsCSV}
+                        disabled={messages.length === 0}>
+                        Export CSV
                     </button>
                     <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={clearChat}>Clear</button>
                 </div>
