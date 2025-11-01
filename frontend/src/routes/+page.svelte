@@ -229,104 +229,116 @@
     }
 </script>
 
-<div class="min-h-screen flex flex-col p-4 bg-gray-100 gap-4">
-
-    <h1 class="text-4xl font-bold text-center">Human Interaction Simulator</h1>
+<div class="min-h-screen p-4 bg-gray-100">
+    <h1 class="text-4xl font-bold text-center mb-4">Human Interaction Simulator</h1>
     
-    <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
-        <!-- Template Selector Header -->
-        <div class="px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
-            <h2 class="text-sm font-medium text-white/90 mb-2">Start with a template:</h2>
-            <div class="flex flex-wrap gap-2">
-                {#each messageTemplates as template, index}
-                    <button
-                        class="px-3 py-1.5 text-sm bg-white/20 hover:bg-white/30 text-white rounded transition-colors"
-                        onclick={() => loadTemplate(index)}
-                    >
-                        {template.name}
+    <div class="flex gap-4 h-[calc(100vh-8rem)]">
+        <!-- Chat Section - Left Side -->
+        <div class="w-[400px] flex-shrink-0 bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
+            <!-- Template Selector Header -->
+            <div class="px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600">
+                <h2 class="text-sm font-medium text-white/90 mb-2">Start with a template:</h2>
+                <div class="flex flex-wrap gap-2">
+                    {#each messageTemplates as template, index}
+                        <button
+                            class="px-3 py-1.5 text-sm bg-white/20 hover:bg-white/30 text-white rounded transition-colors"
+                            onclick={() => loadTemplate(index)}
+                        >
+                            {template.name}
+                        </button>
+                    {/each}
+                </div>
+            </div>
+
+            <header class="px-4 py-3 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+                <h2 class="text-lg font-semibold">Chat</h2>
+                <div class="flex items-center gap-2">
+                    <button 
+                        class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded disabled:opacity-50 disabled:cursor-not-allowed" 
+                        onclick={fetchPredictions}
+                        disabled={isLoadingPredictions || messages.length === 0}
+                        onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !isLoadingPredictions && messages.length > 0 && fetchPredictions()}>
+                        {isLoadingPredictions ? 'Loading...' : 'Predict'}
                     </button>
-                {/each}
-            </div>
-        </div>
+                    <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={clearChat}>Clear</button>
+                </div>
+            </header>
 
-        <header class="px-4 py-3 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-            <h1 class="text-lg font-semibold">Chat</h1>
-            <div class="flex items-center gap-2">
-                <button 
-                    class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded disabled:opacity-50 disabled:cursor-not-allowed" 
-                    onclick={fetchPredictions}
-                    disabled={isLoadingPredictions || messages.length === 0}
-                    onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !isLoadingPredictions && messages.length > 0 && fetchPredictions()}>
-                    {isLoadingPredictions ? 'Loading...' : 'Generate Predictions'}
-                </button>
-                <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={clearChat}>Clear</button>
-            </div>
-        </header>
-
-        <!-- messages -->
-        <main class="flex-1 overflow-auto p-4 space-y-4" style="background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);">
-            {#each messages as m (m.id)}
-                <div class="flex" class:left={m.side === 'left'} class:right={m.side === 'right'} style="justify-content: {m.side === 'right' ? 'flex-end' : 'flex-start'}">
-                    <div class="max-w-[70%]">
-                        <div class="flex items-end gap-2">
-                            {#if m.side === "left"}
-                                <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-medium">L</div>
-                            {/if}
-                            <div class="px-3 py-2 rounded-lg break-words"
-                                 class:bg-left={m.side === 'left'}
-                                 class:bg-right={m.side === 'right'}
-                                 style="background: {m.side === 'left' ? '#eef2ff' : '#dcfce7'}; color: #111827;">
-                                <div class="whitespace-pre-wrap">{m.content}</div>
+            <!-- messages -->
+            <main class="flex-1 overflow-auto p-4 space-y-4" style="background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);">
+                {#each messages as m (m.id)}
+                    <div class="flex" class:left={m.side === 'left'} class:right={m.side === 'right'} style="justify-content: {m.side === 'right' ? 'flex-end' : 'flex-start'}">
+                        <div class="max-w-[70%]">
+                            <div class="flex items-end gap-2">
+                                {#if m.side === "left"}
+                                    <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-sm font-medium">L</div>
+                                {/if}
+                                <div class="px-3 py-2 rounded-lg break-words"
+                                     class:bg-left={m.side === 'left'}
+                                     class:bg-right={m.side === 'right'}
+                                     style="background: {m.side === 'left' ? '#eef2ff' : '#dcfce7'}; color: #111827;">
+                                    <div class="whitespace-pre-wrap">{m.content}</div>
+                                </div>
+                                {#if m.side === "right"}
+                                    <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-sm font-medium">R</div>
+                                {/if}
                             </div>
-                            {#if m.side === "right"}
-                                <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-sm font-medium">R</div>
-                            {/if}
                         </div>
                     </div>
-                </div>
-            {/each}
-            <div bind:this={messagesEnd}></div>
-        </main>
+                {/each}
+                <div bind:this={messagesEnd}></div>
+            </main>
 
-        <!-- input -->
-        <form class="px-4 py-3 border-t bg-white flex items-center gap-3" onsubmit={() => addMessage("right")}>
-            <button
-                type="button"
-                class="w-28 h-12 flex items-center justify-center bg-indigo-600 text-white px-3 py-2 rounded-md hover:bg-indigo-700 flex-shrink-0"
-                onclick={() => addMessage("left")}
-            >
-                Send left
-            </button>
+            <!-- input -->
+            <form class="px-4 py-3 border-t bg-white flex items-center gap-3" onsubmit={() => addMessage("right")}>
+                <button
+                    type="button"
+                    class="w-20 h-12 flex items-center justify-center bg-indigo-600 text-white px-2 py-2 rounded-md hover:bg-indigo-700 flex-shrink-0 text-sm"
+                    onclick={() => addMessage("left")}
+                >
+                    Send L
+                </button>
 
-            <textarea
-                class="flex-1 border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 h-12"
-                rows="2"
-                bind:value={input}
-                placeholder="Type a message..."
-                onkeydown={handleKeydown}
-                aria-label="Message input"
-            ></textarea>
+                <textarea
+                    class="flex-1 border rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 h-12"
+                    rows="2"
+                    bind:value={input}
+                    placeholder="Type a message..."
+                    onkeydown={handleKeydown}
+                    aria-label="Message input"
+                ></textarea>
 
-            <button
-                type="submit"
-                class="w-28 h-12 flex items-center justify-center bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 flex-shrink-0"
-            >
-                Send right
-            </button>
-        </form>
-    </div>
+                <button
+                    type="submit"
+                    class="w-20 h-12 flex items-center justify-center bg-green-600 text-white px-2 py-2 rounded-md hover:bg-green-700 flex-shrink-0 text-sm"
+                >
+                    Send R
+                </button>
+            </form>
+        </div>
 
-    <!-- Message Tree Section -->
-    {#if predictions.length > 0}
-        <div class="w-full max-w-5xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+        <!-- Message Tree Section - Right Side -->
+        <div class="flex-1 bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
             <div class="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-                <h2 class="text-lg font-semibold">Message Tree ({predictions.length} predictions)</h2>
+                <h2 class="text-lg font-semibold">
+                    {#if predictions.length > 0}
+                        Message Tree ({predictions.length} predictions)
+                    {:else}
+                        Message Tree
+                    {/if}
+                </h2>
             </div>
-            <div class="h-[600px] p-4 bg-white overflow-auto">
-                <MessageTree predictions={treeDisplay} orientation="vertical" onNodeClick={handleNodeClick} />
+            <div class="flex-1 p-4 bg-white overflow-auto">
+                {#if predictions.length > 0}
+                    <MessageTree predictions={treeDisplay} orientation="horizontal" onNodeClick={handleNodeClick} />
+                {:else}
+                    <div class="flex items-center justify-center h-full text-gray-400">
+                        <p>Generate predictions to see the message tree</p>
+                    </div>
+                {/if}
             </div>
         </div>
-    {/if}
+    </div>
 </div>
 
 <style>

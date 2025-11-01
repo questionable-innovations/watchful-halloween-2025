@@ -107,8 +107,12 @@
   }
 
   const nodeHeight = 26;
-  const nodeSiblingGap = 16;
+  const nodeSiblingGap = 40;
   const nodeParentGap = 80;
+  const maxNodeWidth = 250; // Maximum width for nodes before wrapping
+  const lineHeight = 14; // Height per line of text
+  const maxLines = 3; // Maximum lines to show
+  
   const nodeSize = $derived(
     orientation === 'horizontal'
       ? ([nodeHeight + nodeSiblingGap, 200 + nodeParentGap] as [number, number])
@@ -135,10 +139,58 @@
   }
 
   const paddingX = 16; // horizontal padding inside node
+  const paddingY = 8; // vertical padding inside node
   const minWidth = 80;
+  
+  function wrapText(text: string, maxWidth: number): string[] {
+    // Simple character-based wrapping since measureCtx might not be ready
+    const maxCharsPerLine = 30; // Approximate characters per line
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let currentLine = '';
+    
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      
+      // Use character count as fallback if measureCtx not available
+      if (measureCtx) {
+        const width = measureCtx.measureText(testLine).width;
+        if (width > maxWidth - paddingX * 2 && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      } else {
+        // Fallback: use character count
+        if (testLine.length > maxCharsPerLine && currentLine) {
+          lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+    }
+    
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    
+    const result = lines.slice(0, maxLines);
+    console.log('wrapText called for:', text.substring(0, 30), 'result:', result.length, 'lines');
+    return result;
+  }
+  
   function nodeWidthFor(name: string): number {
-    const contentWidth = measureTextWidth(name);
-    return Math.max(minWidth, contentWidth + paddingX * 2);
+    // Always use maxNodeWidth for consistency when wrapping
+    return maxNodeWidth;
+  }
+  
+  function nodeHeightFor(name: string): number {
+    const lines = wrapText(name, maxNodeWidth);
+    const height = Math.max(nodeHeight, lines.length * lineHeight + paddingY * 2);
+    console.log('nodeHeightFor:', name.substring(0, 30), 'lines:', lines.length, 'height:', height);
+    return height;
   }
 
   // Highlight the most recent message node (last in list)
@@ -191,16 +243,19 @@
             {#each nodes as node (getNodeKey(node))}
               {#key getNodeKey(node)}
                 {#if node.depth > 0}
+                {@const wrappedLines = wrapText(node.data.name, maxNodeWidth)}
+                {@const nodeWidth = nodeWidthFor(node.data.name)}
+                {@const nodeH = nodeHeightFor(node.data.name)}
                 <Group
-                  x={(orientation === 'horizontal' ? node.y : node.x) - nodeWidthFor(node.data.name) / 2}
-                  y={(orientation === 'horizontal' ? node.x : node.y) - nodeHeight / 2}
+                  x={(orientation === 'horizontal' ? node.y : node.x) - nodeWidth / 2}
+                  y={(orientation === 'horizontal' ? node.x : node.y) - nodeH / 2}
                   motion="tween"
                   onclick={() => onNodeClick ? onNodeClick(node.data.id) : toggle(node.data.id)}
                   class="cursor-pointer"
                 >
                   <Rect
-                    width={nodeWidthFor(node.data.name)}
-                    height={nodeHeight}
+                    width={nodeWidth}
+                    height={nodeH}
                     rx={10}
                     style={`
                       ${(() => {
@@ -210,21 +265,23 @@
                       })()}
                     `}
                   />
-                  <Text
-                    value={node.data.name}
-                    x={nodeWidthFor(node.data.name) / 2}
-                    y={nodeHeight / 2}
-                    dy={-2}
-                    textAnchor="middle"
-                    verticalAnchor="middle"
-                    class="pointer-events-none"
-                    style={`
-                      ${(() => {
-                        const c = colorForSide(node.data.side);
-                        return `fill: ${c.text}; font-size: 11px; font-weight: 600;`;
-                      })()}
-                    `}
-                  />
+                  {#each wrappedLines as line, i}
+                    <Text
+                      value={line + (i === maxLines - 1 && wrappedLines.length > maxLines ? '...' : '')}
+                      x={nodeWidth / 2}
+                      y={paddingY + i * lineHeight + lineHeight / 2}
+                      dy={-2}
+                      textAnchor="middle"
+                      verticalAnchor="middle"
+                      class="pointer-events-none"
+                      style={`
+                        ${(() => {
+                          const c = colorForSide(node.data.side);
+                          return `fill: ${c.text}; font-size: 11px; font-weight: 600;`;
+                        })()}
+                      `}
+                    />
+                  {/each}
                 </Group>
                 {/if}
               {/key}
