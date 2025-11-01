@@ -92,7 +92,9 @@
     <div class="w-full max-w-2xl bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
         <header class="px-4 py-3 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
             <h1 class="text-lg font-semibold">Chat</h1>
-            <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" on:click={clearChat}>Clear</button>
+            <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={() => (showTree = true)}
+                onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (showTree = true)}>See Tree</button>
+            <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={clearChat}>Clear</button>
         </header>
 
         <!-- messages -->
@@ -121,11 +123,11 @@
         </main>
 
         <!-- input -->
-        <form class="px-4 py-3 border-t bg-white flex items-center gap-3" on:submit|preventDefault={() => addMessage("right")}>
+        <form class="px-4 py-3 border-t bg-white flex items-center gap-3" onsubmit={() => addMessage("right")}>
             <button
                 type="button"
                 class="w-28 h-12 flex items-center justify-center bg-indigo-600 text-white px-3 py-2 rounded-md hover:bg-indigo-700 flex-shrink-0"
-                on:click={() => addMessage("left")}
+                onclick={() => addMessage("left")}
             >
                 Send left
             </button>
@@ -135,7 +137,7 @@
                 rows="2"
                 bind:value={input}
                 placeholder="Type a message..."
-                on:keydown={handleKeydown}
+                onkeydown={handleKeydown}
                 aria-label="Message input"
             ></textarea>
 
@@ -146,17 +148,6 @@
                 Send right
             </button>
         </form>
-
-        <!-- see tree action -->
-        <div class="px-4 pb-4 bg-white border-t flex justify-end">
-            <button
-                type="button"
-                class="text-indigo-600 hover:text-indigo-800 text-sm underline"
-                on:click={() => (showTree = true)}
-            >
-                See tree
-            </button>
-        </div>
     </div>
 </div>
 
@@ -175,13 +166,14 @@
 
 {#if showTree}
     <!-- Modal overlay -->
-    <div class="fixed inset-0 z-40 bg-black/50" on:click={() => (showTree = false)}></div>
+    <div class="fixed inset-0 z-40 bg-black/50" role="button" tabindex="0" aria-label="Close modal" onclick={() => (showTree = false)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showTree = false; } }}></div>
     <!-- Modal content -->
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div class="w-full max-w-5xl bg-white rounded-lg shadow-lg overflow-hidden" on:click|stopPropagation>
+        <!-- svelte-ignore a11y_interactive_supports_focus -->
+        <div class="w-full max-w-5xl bg-white rounded-lg shadow-lg overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="message-tree-title" onclick={stopPropagation} onkeydown={stopPropagation}>
             <div class="flex items-center justify-between px-4 py-3 border-b">
-                <h2 class="text-lg font-semibold">Message Tree</h2>
-                <button class="text-gray-600 hover:text-gray-800" on:click={() => (showTree = false)}>Close</button>
+                <h2 class="text-lg font-semibold" id="message-tree-title">Message Tree</h2>
+                <button class="text-gray-600 hover:text-gray-800" onclick={() => (showTree = false)}>Close</button>
             </div>
             <div class="max-h-[80vh] h-[min(80vh,800px)] p-4 bg-white">
                 <MessageTree {predictions} orientation="vertical" />

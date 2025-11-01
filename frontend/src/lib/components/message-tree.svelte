@@ -154,7 +154,7 @@
       <Tree hierarchy={complexDataHierarchy} {orientation} nodeSize={layout === 'node' ? nodeSize : undefined}>
         {#snippet children({ nodes, links })}
           <Layer type={"svg"} class="w-full h-full">
-            {#each links as link (getNodeKey(link.source) + '_' + getNodeKey(link.target))}
+            {#each links.filter(l => l.source.depth > 0 && l.target.depth > 0) as link (getNodeKey(link.source) + '_' + getNodeKey(link.target))}
               <Link
                 data={link}
                 {orientation}
@@ -170,6 +170,7 @@
 
             {#each nodes as node (getNodeKey(node))}
               {#key getNodeKey(node)}
+                {#if node.depth > 0}
                 <Group
                   x={(orientation === 'horizontal' ? node.y : node.x) - nodeWidthFor(node.data.name) / 2}
                   y={(orientation === 'horizontal' ? node.x : node.y) - nodeHeight / 2}
@@ -205,6 +206,7 @@
                     `}
                   />
                 </Group>
+                {/if}
               {/key}
             {/each}
           </Layer>
