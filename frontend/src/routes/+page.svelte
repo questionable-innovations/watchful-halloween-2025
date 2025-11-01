@@ -9,7 +9,6 @@
 
     let input = "";
     let messages: LinearMessage[] = [];
-    let showTree = false;
     let predictions: MessagePredictions = [];
     let messagesEnd: HTMLDivElement | null = null;
     let isLoadingPredictions = false;
@@ -192,8 +191,8 @@
     const greeting = { message: 'Hello from the frontend!' } as const;
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-4 bg-gray-100">
-    <div class="w-full max-w-2xl bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
+<div class="min-h-screen flex flex-col p-4 bg-gray-100 gap-4">
+    <div class="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md flex flex-col overflow-hidden">
         <header class="px-4 py-3 border-b flex items-center justify-between bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
             <h1 class="text-lg font-semibold">Chat</h1>
             <div class="flex items-center gap-2">
@@ -203,13 +202,6 @@
                     disabled={isLoadingPredictions || messages.length === 0}
                     onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && !isLoadingPredictions && messages.length > 0 && fetchPredictions()}>
                     {isLoadingPredictions ? 'Loading...' : 'Generate Predictions'}
-                </button>
-                <button 
-                    class="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded disabled:opacity-50 disabled:cursor-not-allowed" 
-                    onclick={() => (showTree = true)}
-                    disabled={predictions.length === 0}
-                    onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && predictions.length > 0 && (showTree = true)}>
-                    See Tree ({predictions.length})
                 </button>
                 <button class="text-sm bg-white/20 hover:bg-white/30 px-2 py-1 rounded" onclick={clearChat}>Clear</button>
             </div>
@@ -267,6 +259,18 @@
             </button>
         </form>
     </div>
+
+    <!-- Message Tree Section -->
+    {#if predictions.length > 0}
+        <div class="w-full max-w-5xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+                <h2 class="text-lg font-semibold">Message Tree ({predictions.length} predictions)</h2>
+            </div>
+            <div class="h-[600px] p-4 bg-white overflow-auto">
+                <MessageTree predictions={fullTree} orientation="vertical" />
+            </div>
+        </div>
+    {/if}
 </div>
 
 <style>
@@ -274,21 +278,3 @@
     .left { justify-content: flex-start; }
     .right { justify-content: flex-end; }
 </style>
-
-{#if showTree}
-    <!-- Modal overlay -->
-    <div class="fixed inset-0 z-40 bg-black/50" role="button" tabindex="0" aria-label="Close modal" onclick={() => (showTree = false)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showTree = false; } }}></div>
-    <!-- Modal content -->
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <!-- svelte-ignore a11y_interactive_supports_focus -->
-        <div class="w-full max-w-5xl bg-white rounded-lg shadow-lg overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="message-tree-title" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()}>
-            <div class="flex items-center justify-between px-4 py-3 border-b">
-                <h2 class="text-lg font-semibold" id="message-tree-title">Message Tree</h2>
-                <button class="text-gray-600 hover:text-gray-800" onclick={() => (showTree = false)}>Close</button>
-            </div>
-            <div class="max-h-[80vh] h-[min(80vh,800px)] p-4 bg-white">
-                <MessageTree predictions={fullTree} orientation="vertical" />
-            </div>
-        </div>
-    </div>
-{/if}
