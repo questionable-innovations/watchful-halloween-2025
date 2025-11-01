@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ComponentProps } from 'svelte';
   import { cubicOut } from 'svelte/easing';
+  import { onMount } from 'svelte';
   import { hierarchy, type HierarchyNode } from 'd3-hierarchy';
   import { curveBumpX, curveBumpY } from 'd3-shape';
 
@@ -88,15 +89,43 @@
     return !!(n.data.children && n.data.children.length > 0);
   }
 
-  const nodeWidth = 160;
   const nodeHeight = 26;
   const nodeSiblingGap = 16;
   const nodeParentGap = 80;
   const nodeSize = $derived(
     orientation === 'horizontal'
-      ? ([nodeHeight + nodeSiblingGap, nodeWidth + nodeParentGap] as [number, number])
-      : ([nodeWidth + nodeSiblingGap, nodeHeight + nodeParentGap] as [number, number])
+      ? ([nodeHeight + nodeSiblingGap, 200 + nodeParentGap] as [number, number])
+      : ([200 + nodeSiblingGap, nodeHeight + nodeParentGap] as [number, number])
   );
+
+  // Measure text width to size nodes dynamically
+  let measureCtx: CanvasRenderingContext2D | null = null;
+  onMount(() => {
+    const canvas = document.createElement('canvas');
+    measureCtx = canvas.getContext('2d');
+    if (measureCtx) {
+      // match Text style: 11px, weight 600
+      measureCtx.font = '600 11px system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", Helvetica Neue, Arial, sans-serif';
+    }
+  });
+
+  function measureTextWidth(text: string): number {
+    if (!measureCtx) return Math.max(40, Math.round(text.length * 7));
+    // normalize newlines to spaces for single-line rendering
+    const t = text.replace(/\n/g, ' ');
+    const w = measureCtx.measureText(t).width;
+    return Math.ceil(w);
+  }
+
+  const paddingX = 16; // horizontal padding inside node
+  const minWidth = 80;
+  function nodeWidthFor(name: string): number {
+    const contentWidth = measureTextWidth(name);
+    return Math.max(minWidth, contentWidth + paddingX * 2);
+  }
+
+  // Highlight the most recent message node (last in list)
+  const lastId = $derived(predictions.at(-1)?.id);
 
   function toggle(id: string) {
     expandedIds = expandedIds.includes(id)
@@ -142,26 +171,27 @@
             {#each nodes as node (getNodeKey(node))}
               {#key getNodeKey(node)}
                 <Group
-                  x={(orientation === 'horizontal' ? node.y : node.x) - nodeWidth / 2}
+                  x={(orientation === 'horizontal' ? node.y : node.x) - nodeWidthFor(node.data.name) / 2}
                   y={(orientation === 'horizontal' ? node.x : node.y) - nodeHeight / 2}
                   motion="tween"
                   onclick={() => toggle(node.data.id)}
                   class={cls(hasChildren(node) && 'cursor-pointer')}
                 >
                   <Rect
-                    width={nodeWidth}
+                    width={nodeWidthFor(node.data.name)}
                     height={nodeHeight}
                     rx={10}
                     style={`
                       ${(() => {
                         const c = colorForSide(node.data.side);
-                        return `fill: ${hasChildren(node) ? c.fill : '#ffffff'}; stroke: ${hasChildren(node) ? c.stroke : '#9ca3af'}; stroke-width: ${hasChildren(node) ? 1.5 : 1};`;
+                        const strokeWidth = node.data.id === lastId ? 2 : 1.5;
+                        return `fill: ${c.fill}; stroke: ${c.stroke}; stroke-width: ${strokeWidth};`;
                       })()}
                     `}
                   />
                   <Text
                     value={node.data.name}
-                    x={nodeWidth / 2}
+                    x={nodeWidthFor(node.data.name) / 2}
                     y={nodeHeight / 2}
                     dy={-2}
                     textAnchor="middle"
@@ -170,7 +200,7 @@
                     style={`
                       ${(() => {
                         const c = colorForSide(node.data.side);
-                        return `fill: ${hasChildren(node) ? c.text : '#374151'}; font-size: 11px; font-weight: 600;`;
+                        return `fill: ${c.text}; font-size: 11px; font-weight: 600;`;
                       })()}
                     `}
                   />
